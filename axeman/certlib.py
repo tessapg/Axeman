@@ -12,7 +12,7 @@ CTL_INFO = "http://{}/ct/v1/get-sth"
 
 DOWNLOAD = "http://{}/ct/v1/get-entries?start={}&end={}"
 
-from construct import Struct, Byte, Int16ub, Int64ub, Enum, Bytes, Int24ub, this, GreedyBytes, GreedyRange, Terminated, Embedded
+from construct import Struct, Byte, Int16ub, Int64ub, Enum, Bytes, Int24ub, this, GreedyBytes, GreedyRange, Terminated
 
 MerkleTreeHeader = Struct(
     "Version"         / Byte,
@@ -34,7 +34,8 @@ CertificateChain = Struct(
 
 PreCertEntry = Struct(
     "LeafCert" / Certificate,
-    Embedded(CertificateChain),
+    "ChainLength" / Int24ub,
+    "Chain" / GreedyRange(Certificate),
     Terminated
 )
 
@@ -77,17 +78,26 @@ async def populate_work(work_deque, log_info, start=0):
 
     total_size = tree_size - 1
 
-    end = start + block_size
-
-    if end > tree_size:
-        end = tree_size
-
-    chunks = math.ceil((total_size - start) / block_size)
-
+    start_remainder = start % block_size
+>     first_inc = block_size - start_remainder - 1
+>     end = first_inc + start
+>     if end >= tree_size:
+>         print("we are at the tree size")
+>         end = tree_size - 1
+>
+>     range_start = 1
+>     chunks = math.ceil((total_size - end) / block_size) + 1
+>     assert end >= start, "End {} is less than start {}!".format(end, start)
+>     assert end < tree_size, "End {} is less than tree_size {}".format(end, tree_size)
+>     work_deque.append((start, end))
+>     start += first_inc
+>     start += 1
+>     end = start + block_size - 1
+    
     if chunks == 0:
         raise Exception("No work needed!")
 
-    for _ in range(chunks):
+    for _ in range(range_start, chunks):
         # Cap the end to the last record in the DB
         if end >= tree_size:
             end = tree_size - 1
@@ -99,7 +109,7 @@ async def populate_work(work_deque, log_info, start=0):
 
         start += block_size
 
-        end = start + block_size + 1
+        end = start + block_size - 1
 
 def add_all_domains(cert_data):
     all_domains = []

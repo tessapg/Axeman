@@ -79,20 +79,20 @@ async def populate_work(work_deque, log_info, start=0):
     total_size = tree_size - 1
 
     start_remainder = start % block_size
->     first_inc = block_size - start_remainder - 1
->     end = first_inc + start
->     if end >= tree_size:
->         print("we are at the tree size")
->         end = tree_size - 1
->
->     range_start = 1
->     chunks = math.ceil((total_size - end) / block_size) + 1
->     assert end >= start, "End {} is less than start {}!".format(end, start)
->     assert end < tree_size, "End {} is less than tree_size {}".format(end, tree_size)
->     work_deque.append((start, end))
->     start += first_inc
->     start += 1
->     end = start + block_size - 1
+    first_inc = block_size - start_remainder - 1
+    end = first_inc + start
+    if end >= tree_size:
+        print("we are at the tree size")
+        end = tree_size - 1
+        
+      range_start = 1
+      chunks = math.ceil((total_size - end) / block_size) + 1
+      assert end >= start, "End {} is less than start {}!".format(end, start)
+      assert end < tree_size, "End {} is less than tree_size {}".format(end, tree_size)
+      work_deque.append((start, end))
+      start += first_inc
+      start += 1
+      end = start + block_size - 1
     
     if chunks == 0:
         raise Exception("No work needed!")
